@@ -25,4 +25,13 @@ function readPort(): number {
 
 export const env = {
   port: readPort(),
+  jwtSecret: readJwtSecret(),
 };
+
+function readJwtSecret(): string {
+  const raw = process.env["JWT_SECRET"];
+  if (raw === undefined || raw.trim() === "") {
+    throw new Error("JWT_SECRET is required");
+  }
+  return raw;
+}
