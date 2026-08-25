@@ -26,6 +26,7 @@ function readPort(): number {
 export const env = {
   port: readPort(),
   jwtSecret: readJwtSecret(),
+  businessTimezone: readBusinessTimezone(),
 };
 
 function readJwtSecret(): string {
@@ -34,4 +35,15 @@ function readJwtSecret(): string {
     throw new Error("JWT_SECRET is required");
   }
   return raw;
+}
+
+function readBusinessTimezone(): string {
+  const raw = process.env["BUSINESS_TIMEZONE"];
+  const timezone = raw === undefined || raw.trim() === "" ? "Asia/Kolkata" : raw;
+  try {
+    Intl.DateTimeFormat("en-US", { timeZone: timezone }).format(new Date());
+  } catch {
+    throw new Error(`Invalid BUSINESS_TIMEZONE: ${timezone}`);
+  }
+  return timezone;
 }

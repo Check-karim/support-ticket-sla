@@ -1,6 +1,6 @@
 import type { Priority, Prisma, PrismaClient, TicketStatus } from "@prisma/client";
 import { AppError, ErrorCode } from "../../errors.js";
-import { evaluateSla, type SlaState } from "../sla/sla-service.js";
+import { evaluateSla, type SlaEvaluationContext, type SlaState } from "../sla/sla-service.js";
 
 export const DEFAULT_TICKET_PAGE_SIZE = 20;
 export const MAX_TICKET_PAGE_SIZE = 100;
@@ -106,14 +106,19 @@ function buildTicketWhere(input: ListTicketsInput): Prisma.TicketWhereInput {
   return where;
 }
 
-function matchesSlaState(ticket: TicketRecord, slaState: SlaState): boolean {
-  const sla = evaluateSla(ticket);
-  return sla.firstResponseState === slaState || sla.resolutionState === slaState;
+function matchesSlaState(
+  ticket: TicketRecord,
+  slaState: SlaState,
+  sla: SlaEvaluationContext,
+): boolean {
+  const info = evaluateSla(ticket, sla);
+  return info.firstResponseState === slaState || info.resolutionState === slaState;
 }
 
 export async function listTickets(
   prisma: PrismaClient,
   input: ListTicketsInput,
+  sla: SlaEvaluationContext,
 ): Promise<TicketConnection> {
   const take = resolveTake(input.take);
   const where = buildTicketWhere(input);
@@ -153,7 +158,7 @@ export async function listTickets(
     include: ticketInclude,
     orderBy,
   });
-  const filtered = records.filter((ticket) => matchesSlaState(ticket, slaState));
+  const filtered = records.filter((ticket) => matchesSlaState(ticket, slaState, sla));
   const cursorIndex = decodedCursor
     ? filtered.findIndex((ticket) => ticket.id === decodedCursor.id)
     : -1;
