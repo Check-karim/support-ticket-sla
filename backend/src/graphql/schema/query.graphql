@@ -1,0 +1,14 @@
+type Query {
+  tickets(
+    status: TicketStatus
+    priority: Priority
+    assigneeId: ID
+    slaState: SLAState
+    take: Int
+    cursor: String
+  ): TicketConnection!
+  ticket(id: ID!): Ticket
+  dashboard: TicketDashboard!
+  users(role: UserRole): [User!]!
+  holidays: [Holiday!]!
+}
