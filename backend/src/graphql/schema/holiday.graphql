@@ -1,0 +1,5 @@
+type Holiday {
+  id: ID!
+  date: String!
+  name: String!
+}
