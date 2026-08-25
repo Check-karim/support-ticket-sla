@@ -1,9 +1,33 @@
 import { PrismaClient } from "@prisma/client";
+import { hashPassword } from "../src/services/auth/password.js";
 
 const prisma = new PrismaClient();
+const SEED_PASSWORD = "password123";
 
 async function seed(): Promise<void> {
-  // Seed users, tickets, and holidays will be added in a later step.
+  const passwordHash = await hashPassword(SEED_PASSWORD);
+
+  await prisma.user.upsert({
+    where: { email: "reporter@example.com" },
+    update: {},
+    create: {
+      name: "Alex Reporter",
+      email: "reporter@example.com",
+      passwordHash,
+      role: "REPORTER",
+    },
+  });
+
+  await prisma.user.upsert({
+    where: { email: "agent@example.com" },
+    update: {},
+    create: {
+      name: "Sam Agent",
+      email: "agent@example.com",
+      passwordHash,
+      role: "AGENT",
+    },
+  });
 }
 
 seed()

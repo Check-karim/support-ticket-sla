@@ -1,0 +1,19 @@
+type AuthPayload {
+  token: String!
+  user: User!
+}
+
+type Mutation {
+  register(
+    name: String!
+    email: String!
+    password: String!
+    role: UserRole!
+  ): AuthPayload!
+  login(email: String!, password: String!): AuthPayload!
+  createTicket(title: String!, description: String!, priority: Priority!): Ticket!
+  assignTicket(ticketId: ID!, assigneeId: ID!): Ticket!
+  changeTicketStatus(ticketId: ID!, status: TicketStatus!): Ticket!
+  addComment(ticketId: ID!, content: String!): Comment!
+  resolveTicket(ticketId: ID!): Ticket!
+}

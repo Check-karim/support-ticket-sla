@@ -2,6 +2,7 @@ import type { Priority, TicketStatus, UserRole } from "@prisma/client";
 import type { GraphQLContext } from "../context.js";
 import { resolveOrThrow } from "../errors.js";
 import { getDashboard } from "../../services/dashboard/dashboard-service.js";
+import { requireUser } from "../../services/auth/permissions.js";
 import { listHolidays } from "../../services/holiday/holiday-service.js";
 import type { SlaState } from "../../services/sla/sla-service.js";
 import {
@@ -23,29 +24,43 @@ export const queryResolvers = {
     },
     context: GraphQLContext,
   ) =>
-    resolveOrThrow(() =>
-      listTickets(context.prisma, {
+    resolveOrThrow(() => {
+      requireUser(context.user);
+      return listTickets(context.prisma, {
         status: args.status,
         priority: args.priority,
         assigneeId: args.assigneeId,
         slaState: args.slaState,
         take: args.take,
         cursor: args.cursor,
-      }),
-    ),
+      });
+    }),
 
   ticket: (_parent: unknown, args: { id: string }, context: GraphQLContext) =>
-    resolveOrThrow(() => getTicketById(context.prisma, args.id)),
+    resolveOrThrow(() => {
+      requireUser(context.user);
+      return getTicketById(context.prisma, args.id);
+    }),
 
   dashboard: (_parent: unknown, _args: unknown, context: GraphQLContext) =>
-    resolveOrThrow(() => getDashboard(context.prisma)),
+    resolveOrThrow(() => {
+      requireUser(context.user);
+      return getDashboard(context.prisma);
+    }),
 
   users: (
     _parent: unknown,
     args: { role?: UserRole | null },
     context: GraphQLContext,
-  ) => resolveOrThrow(() => listUsers(context.prisma, args.role)),
+  ) =>
+    resolveOrThrow(() => {
+      requireUser(context.user);
+      return listUsers(context.prisma, args.role);
+    }),
 
   holidays: (_parent: unknown, _args: unknown, context: GraphQLContext) =>
-    resolveOrThrow(() => listHolidays(context.prisma)),
+    resolveOrThrow(() => {
+      requireUser(context.user);
+      return listHolidays(context.prisma);
+    }),
 };
