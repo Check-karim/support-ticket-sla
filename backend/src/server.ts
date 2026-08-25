@@ -7,6 +7,7 @@ import type { GraphQLContext } from "./graphql/context.js";
 import { toGraphQLError } from "./graphql/errors.js";
 import { loadTypeDefs } from "./graphql/load-type-defs.js";
 import { resolvers } from "./graphql/resolver/index.js";
+import { createSlaContext } from "./services/sla/sla-service.js";
 
 const schema = createSchema({
   typeDefs: loadTypeDefs(),
@@ -21,6 +22,10 @@ const yoga = createYoga<GraphQLContext>({
       return {
         prisma,
         user: await authenticateRequest(request, prisma),
+        sla: createSlaContext({
+          holidays: await prisma.holiday.findMany({ select: { date: true } }),
+          timezone: env.businessTimezone,
+        }),
       };
     } catch (error: unknown) {
       throw toGraphQLError(error);

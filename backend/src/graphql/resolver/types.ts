@@ -21,8 +21,8 @@ export const ticketResolvers = {
     ticket.firstResponseAt ? toIsoString(ticket.firstResponseAt) : null,
   resolvedAt: (ticket: TicketRecord) =>
     ticket.resolvedAt ? toIsoString(ticket.resolvedAt) : null,
-  sla: (ticket: TicketRecord) => {
-    const sla = evaluateSla(ticket);
+  sla: (ticket: TicketRecord, _args: unknown, context: GraphQLContext) => {
+    const sla = evaluateSla(ticket, context.sla);
     return {
       firstResponseDueAt: toIsoString(sla.firstResponseDueAt),
       resolutionDueAt: toIsoString(sla.resolutionDueAt),

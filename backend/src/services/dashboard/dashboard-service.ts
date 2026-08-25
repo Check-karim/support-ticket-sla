@@ -1,5 +1,5 @@
 import type { PrismaClient } from "@prisma/client";
-import { evaluateSla } from "../sla/sla-service.js";
+import { evaluateSla, type SlaEvaluationContext } from "../sla/sla-service.js";
 
 export type TicketDashboard = {
   openTickets: number;
@@ -8,7 +8,10 @@ export type TicketDashboard = {
   breachedTickets: number;
 };
 
-export async function getDashboard(prisma: PrismaClient): Promise<TicketDashboard> {
+export async function getDashboard(
+  prisma: PrismaClient,
+  slaContext: SlaEvaluationContext,
+): Promise<TicketDashboard> {
   const [openTickets, inProgressTickets, activeTickets] = await Promise.all([
     prisma.ticket.count({ where: { status: "OPEN" } }),
     prisma.ticket.count({ where: { status: "IN_PROGRESS" } }),
@@ -27,7 +30,7 @@ export async function getDashboard(prisma: PrismaClient): Promise<TicketDashboar
   let breachedTickets = 0;
 
   for (const ticket of activeTickets) {
-    const sla = evaluateSla(ticket);
+    const sla = evaluateSla(ticket, slaContext);
     const states = [sla.firstResponseState, sla.resolutionState];
     if (states.includes("BREACHED")) {
       breachedTickets += 1;

@@ -26,14 +26,18 @@ export const queryResolvers = {
   ) =>
     resolveOrThrow(() => {
       requireUser(context.user);
-      return listTickets(context.prisma, {
-        status: args.status,
-        priority: args.priority,
-        assigneeId: args.assigneeId,
-        slaState: args.slaState,
-        take: args.take,
-        cursor: args.cursor,
-      });
+      return listTickets(
+        context.prisma,
+        {
+          status: args.status,
+          priority: args.priority,
+          assigneeId: args.assigneeId,
+          slaState: args.slaState,
+          take: args.take,
+          cursor: args.cursor,
+        },
+        context.sla,
+      );
     }),
 
   ticket: (_parent: unknown, args: { id: string }, context: GraphQLContext) =>
@@ -45,7 +49,7 @@ export const queryResolvers = {
   dashboard: (_parent: unknown, _args: unknown, context: GraphQLContext) =>
     resolveOrThrow(() => {
       requireUser(context.user);
-      return getDashboard(context.prisma);
+      return getDashboard(context.prisma, context.sla);
     }),
 
   users: (
