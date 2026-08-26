@@ -6,6 +6,7 @@ A support-ticket system where SLA clocks run on **business hours only**. Nights,
 
 - Runtime: Node.js 20+ (TypeScript, strict mode)
 - API: GraphQL Yoga, schema-first (`.graphql` files)
+- Frontend: React + TypeScript (Vite)
 - Database: PostgreSQL + Prisma
 - Auth: bcrypt password hashes + JWT
 - SLA: dedicated business-hours engine (`luxon`, timezone `BUSINESS_TIMEZONE`)
@@ -96,6 +97,7 @@ DATABASE_URL=postgresql://USER:PASSWORD@localhost:5432/support_ticket_sla?schema
 JWT_SECRET=<long-random-secret>
 BUSINESS_TIMEZONE=Asia/Kolkata
 PORT=4000
+FRONTEND_ORIGIN=http://localhost:5173
 ```
 
 Do not commit `.env` files.
@@ -115,12 +117,22 @@ copy .env.example .env
 npm install
 npm run gendb
 npx prisma db seed
-
-# 3. API
 npm run dev
 ```
 
 GraphiQL: http://localhost:4000/graphql
+
+```bash
+# 3. Frontend (second terminal)
+cd frontend
+copy .env.example .env
+npm install
+npm run dev
+```
+
+UI: http://localhost:5173
+
+The Vite dev server proxies `/graphql` to the API. For a non-proxied client origin, set `FRONTEND_ORIGIN` on the backend.
 
 ### Seed credentials
 
@@ -133,9 +145,9 @@ GraphiQL: http://localhost:4000/graphql
 
 ```bash
 cd backend
-npm test                 # unit tests (SLA, transitions, validation, auth)
-npm run test:integration # Prisma against real PostgreSQL (requires Docker Compose DB)
-npm run test:all
+npm test
+npm run test:integration
+
 ```
 
 The integration test does **not** mock PostgreSQL. It creates a ticket, adds a reporter comment then an agent comment, and checks persisted `firstResponseAt` plus SLA fields derived from that row.
@@ -179,7 +191,26 @@ query {
 
 ## Frontend
 
-Not implemented yet. The API is the source of truth for SLA state.
+React + TypeScript (Vite). SLA badges and remaining time are copied from `Ticket.sla` returned by the API. The UI never applies the 75% rule itself.
+
+- Ticket list: priority, status, assignee, SLA state, remaining time
+- Filters: status, priority, assignee, SLA state
+- Sort: created at, priority, remaining SLA minutes (API `TicketSort`)
+- Create ticket, detail, comment thread
+- Agents: assign, change status, resolve
+- GraphQL `extensions.code` shown on validation/authorization errors
+- Timestamps formatted with `toLocaleString()` (user local timezone)
+
+## Written walkthrough
+
+1. **Architecture** — GraphQL Yoga loads `.graphql` schema files. Resolvers call services (`ticket`, `auth`, `sla`). Prisma talks to PostgreSQL.
+2. **GraphQL** — Queries: `tickets` (cursor + filters + sort), `ticket`, `dashboard`, `users`, `holidays`. Mutations: register/login and ticket actions. Auth is a Bearer JWT on context.
+3. **Database** — User, Ticket, Comment, Holiday with indexes on filter fields. Passwords stored as `passwordHash`.
+4. **SLA** — `business-hours.ts` adds/counts minutes only Mon–Fri 09:00–18:00 in `BUSINESS_TIMEZONE`, skipping holidays. Policies are per priority. Due times and remaining minutes are computed on read.
+5. **Clock freeze** — First non-reporter comment sets `firstResponseAt`. Resolve sets `resolvedAt`. Those timestamps freeze their clocks so a met SLA cannot later show `BREACHED`.
+6. **Status transitions** — `OPEN → IN_PROGRESS → RESOLVED → CLOSED`, with reopen to `OPEN` only from `RESOLVED`/`CLOSED`. `CLOSED → IN_PROGRESS` is `INVALID_STATUS_TRANSITION`.
+7. **Testing** — Unit tests cover SLA edge cases, transitions, validation, and auth. `npm run test:integration` uses real Prisma/PostgreSQL (Docker Compose), not a mock.
+8. **Tradeoff** — Priority/SLA sorts and `slaState` filters are applied in memory after fetch so ranking can use computed SLA rather than a stored column.
 
 ## How I'd extend this
 

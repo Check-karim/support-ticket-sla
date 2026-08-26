@@ -28,6 +28,14 @@ export type TicketConnection = {
   };
 };
 
+export type TicketSort =
+  | "CREATED_AT_DESC"
+  | "CREATED_AT_ASC"
+  | "PRIORITY_DESC"
+  | "PRIORITY_ASC"
+  | "SLA_REMAINING_ASC"
+  | "SLA_REMAINING_DESC";
+
 export type ListTicketsInput = {
   status: TicketStatus | null | undefined;
   priority: Priority | null | undefined;
@@ -35,6 +43,7 @@ export type ListTicketsInput = {
   slaState: SlaState | null | undefined;
   take: number | null | undefined;
   cursor: string | null | undefined;
+  sort: TicketSort | null | undefined;
 };
 
 type TicketCursor = {
@@ -115,6 +124,58 @@ function matchesSlaState(
   return info.firstResponseState === slaState || info.resolutionState === slaState;
 }
 
+const PRIORITY_RANK: Record<Priority, number> = {
+  LOW: 1,
+  MEDIUM: 2,
+  HIGH: 3,
+  URGENT: 4,
+};
+
+function slaRemaining(ticket: TicketRecord, sla: SlaEvaluationContext): number {
+  const info = evaluateSla(ticket, sla);
+  return Math.min(info.firstResponseRemainingMinutes, info.resolutionRemainingMinutes);
+}
+
+function compareTickets(
+  left: TicketRecord,
+  right: TicketRecord,
+  sort: TicketSort,
+  sla: SlaEvaluationContext,
+): number {
+  switch (sort) {
+    case "CREATED_AT_ASC":
+      return left.createdAt.getTime() - right.createdAt.getTime() || left.id.localeCompare(right.id);
+    case "CREATED_AT_DESC":
+      return right.createdAt.getTime() - left.createdAt.getTime() || right.id.localeCompare(left.id);
+    case "PRIORITY_ASC":
+      return PRIORITY_RANK[left.priority] - PRIORITY_RANK[right.priority] || left.id.localeCompare(right.id);
+    case "PRIORITY_DESC":
+      return PRIORITY_RANK[right.priority] - PRIORITY_RANK[left.priority] || left.id.localeCompare(right.id);
+    case "SLA_REMAINING_ASC":
+      return slaRemaining(left, sla) - slaRemaining(right, sla) || left.id.localeCompare(right.id);
+    case "SLA_REMAINING_DESC":
+      return slaRemaining(right, sla) - slaRemaining(left, sla) || left.id.localeCompare(right.id);
+  }
+}
+
+function paginateInMemory(
+  records: TicketRecord[],
+  take: number,
+  cursorId: string | null,
+): TicketConnection {
+  const cursorIndex = cursorId ? records.findIndex((ticket) => ticket.id === cursorId) : -1;
+  const start = cursorIndex >= 0 ? cursorIndex + 1 : 0;
+  const page = records.slice(start, start + take);
+  const last = page[page.length - 1];
+  return {
+    nodes: page,
+    pageInfo: {
+      hasNextPage: records.length > start + take,
+      endCursor: last ? encodeCursor(last) : null,
+    },
+  };
+}
+
 export async function listTickets(
   prisma: PrismaClient,
   input: ListTicketsInput,
@@ -122,20 +183,27 @@ export async function listTickets(
 ): Promise<TicketConnection> {
   const take = resolveTake(input.take);
   const where = buildTicketWhere(input);
+  const sort: TicketSort = input.sort ?? "CREATED_AT_DESC";
 
   if (input.cursor != null && input.cursor.trim() === "") {
     throw new AppError(ErrorCode.INVALID_CURSOR, "Invalid pagination cursor.");
   }
 
   const decodedCursor = input.cursor ? decodeCursor(input.cursor) : null;
-  const orderBy = [{ createdAt: "desc" as const }, { id: "desc" as const }];
+  const createdAtOrder = sort === "CREATED_AT_ASC" ? "asc" : "desc";
+  const orderBy = [
+    { createdAt: createdAtOrder },
+    { id: createdAtOrder },
+  ] as const;
   const slaState = input.slaState;
+  const needsMemorySort =
+    slaState != null || sort === "PRIORITY_ASC" || sort === "PRIORITY_DESC" || sort.startsWith("SLA_");
 
-  if (slaState == null) {
+  if (!needsMemorySort) {
     const records = await prisma.ticket.findMany({
       where,
       include: ticketInclude,
-      orderBy,
+      orderBy: [...orderBy],
       take: take + 1,
       ...(decodedCursor ? { cursor: { id: decodedCursor.id }, skip: 1 } : {}),
     });
@@ -156,24 +224,14 @@ export async function listTickets(
   const records = await prisma.ticket.findMany({
     where,
     include: ticketInclude,
-    orderBy,
+    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
   });
-  const filtered = records.filter((ticket) => matchesSlaState(ticket, slaState, sla));
-  const cursorIndex = decodedCursor
-    ? filtered.findIndex((ticket) => ticket.id === decodedCursor.id)
-    : -1;
-  const start = cursorIndex >= 0 ? cursorIndex + 1 : 0;
-  const page = filtered.slice(start, start + take);
-  const hasNextPage = filtered.length > start + take;
-  const last = page[page.length - 1];
-
-  return {
-    nodes: page,
-    pageInfo: {
-      hasNextPage,
-      endCursor: last ? encodeCursor(last) : null,
-    },
-  };
+  const filtered =
+    slaState == null
+      ? records
+      : records.filter((ticket) => matchesSlaState(ticket, slaState, sla));
+  filtered.sort((left, right) => compareTickets(left, right, sort, sla));
+  return paginateInMemory(filtered, take, decodedCursor?.id ?? null);
 }
 
 export async function getTicketById(
