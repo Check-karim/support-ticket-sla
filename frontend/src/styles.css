@@ -1,0 +1,207 @@
+:root {
+  font-family: "Segoe UI", system-ui, sans-serif;
+  color: #122033;
+  background: #eef2f6;
+  line-height: 1.45;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}
+
+a {
+  color: #1f4e79;
+}
+
+.page,
+.auth-card {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 24px 16px 48px;
+}
+
+.auth-card {
+  max-width: 440px;
+  margin-top: 8vh;
+  background: white;
+  border-radius: 12px;
+  padding: 28px;
+  box-shadow: 0 8px 30px rgba(18, 32, 51, 0.08);
+}
+
+.topbar,
+.filters,
+.actions,
+.stats,
+.sla-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.stats,
+.sla-grid {
+  margin: 16px 0;
+}
+
+.stats article,
+.sla-grid article,
+.agent-panel {
+  background: white;
+  border-radius: 10px;
+  padding: 12px 16px;
+  box-shadow: 0 1px 4px rgba(18, 32, 51, 0.06);
+}
+
+.stats article {
+  min-width: 140px;
+}
+
+.stats strong {
+  display: block;
+  font-size: 1.6rem;
+}
+
+.filters {
+  justify-content: flex-start;
+  margin: 12px 0 16px;
+}
+
+label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.9rem;
+}
+
+input,
+select,
+textarea,
+button {
+  font: inherit;
+}
+
+input,
+select,
+textarea {
+  border: 1px solid #c5d0dc;
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+
+button,
+.button {
+  background: #1f4e79;
+  color: white;
+  border: 0;
+  border-radius: 8px;
+  padding: 8px 14px;
+  text-decoration: none;
+  display: inline-block;
+  cursor: pointer;
+}
+
+button.secondary {
+  background: #5b6b7c;
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.table-wrap {
+  overflow-x: auto;
+  background: white;
+  border-radius: 10px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th,
+td {
+  text-align: left;
+  padding: 10px 12px;
+  border-bottom: 1px solid #edf1f5;
+  vertical-align: top;
+}
+
+.pill {
+  display: inline-block;
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 0.8rem;
+  background: #e8eef4;
+}
+
+.priority-URGENT,
+.sla-BREACHED {
+  background: #f8d0d0;
+  color: #8a1f1f;
+}
+
+.priority-HIGH,
+.sla-AT_RISK {
+  background: #fbe3c4;
+  color: #8a4b00;
+}
+
+.priority-MEDIUM,
+.sla-ON_TRACK {
+  background: #d9f0d9;
+  color: #216221;
+}
+
+.priority-LOW {
+  background: #dde7f5;
+  color: #1f4e79;
+}
+
+.muted {
+  color: #5b6b7c;
+}
+
+.small {
+  font-size: 0.8rem;
+}
+
+.banner.error {
+  background: #fde8e8;
+  color: #8a1f1f;
+  padding: 10px 12px;
+  border-radius: 8px;
+  display: flex;
+  gap: 8px;
+  margin: 12px 0;
+}
+
+.stack {
+  display: grid;
+  gap: 12px;
+  max-width: 640px;
+}
+
+.comments {
+  list-style: none;
+  padding: 0;
+}
+
+.comments li {
+  background: white;
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+
+.body {
+  white-space: pre-wrap;
+}

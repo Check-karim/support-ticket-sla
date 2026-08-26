@@ -27,6 +27,7 @@ export const env = {
   port: readPort(),
   jwtSecret: readJwtSecret(),
   businessTimezone: readBusinessTimezone(),
+  frontendOrigin: readFrontendOrigin(),
 };
 
 function readJwtSecret(): string {
@@ -46,4 +47,12 @@ function readBusinessTimezone(): string {
     throw new Error(`Invalid BUSINESS_TIMEZONE: ${timezone}`);
   }
   return timezone;
+}
+
+function readFrontendOrigin(): string {
+  const raw = process.env["FRONTEND_ORIGIN"];
+  if (raw === undefined || raw.trim() === "") {
+    return "http://localhost:5173";
+  }
+  return raw;
 }

@@ -17,6 +17,11 @@ const schema = createSchema({
 const yoga = createYoga<GraphQLContext>({
   schema,
   graphqlEndpoint: "/graphql",
+  cors: {
+    origin: env.frontendOrigin,
+    credentials: true,
+    allowedHeaders: ["Content-Type", "Authorization"],
+  },
   context: async ({ request }): Promise<GraphQLContext> => {
     try {
       return {

@@ -6,6 +6,7 @@ type Query {
     slaState: SLAState
     take: Int
     cursor: String
+    sort: TicketSort
   ): TicketConnection!
   ticket(id: ID!): Ticket
   dashboard: TicketDashboard!

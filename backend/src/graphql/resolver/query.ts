@@ -8,6 +8,7 @@ import type { SlaState } from "../../services/sla/sla-service.js";
 import {
   getTicketById,
   listTickets,
+  type TicketSort,
 } from "../../services/ticket/ticket-service.js";
 import { listUsers } from "../../services/user/user-service.js";
 
@@ -21,6 +22,7 @@ export const queryResolvers = {
       slaState?: SlaState | null;
       take?: number | null;
       cursor?: string | null;
+      sort?: TicketSort | null;
     },
     context: GraphQLContext,
   ) =>
@@ -35,6 +37,7 @@ export const queryResolvers = {
           slaState: args.slaState,
           take: args.take,
           cursor: args.cursor,
+          sort: args.sort,
         },
         context.sla,
       );
